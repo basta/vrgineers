@@ -94,23 +94,21 @@ int main(int argc, char **argv) {
     glDebugMessageCallback( MessageCallback, 0 );
 
 
-    GLuint computeShader = glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(computeShader, 1, &computeShaderCode, nullptr);
-    glCompileShader(computeShader);
+    auto shader = new ComputeShader(computeShaderCode);
 
     int success;
-    glGetShaderiv(computeShader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(shader->glID, GL_COMPILE_STATUS, &success);
 
     char infoLog[512];
     if (!success) {
-        glGetShaderInfoLog(computeShader, 512, NULL, infoLog);
+        glGetShaderInfoLog(shader->glID, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::COMPUTE::COMPILATION_FAILED\n" << infoLog << std::endl;
 
     };
 
     GLuint computeProgram = glCreateProgram();
 
-    glAttachShader(computeProgram, computeShader);
+    glAttachShader(computeProgram, shader->glID);
     glLinkProgram(computeProgram);
     glUseProgram(computeProgram);
 
@@ -127,7 +125,7 @@ int main(int argc, char **argv) {
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
     save_img("/tmp/shaderOut.png", outImg, width, height, 4);
 
-    glDeleteShader(computeShader);
+    glDeleteShader(shader->glID);
     glDeleteProgram(computeProgram);
     glfwTerminate();
     std::cout << "Hello, World!" << std::endl;

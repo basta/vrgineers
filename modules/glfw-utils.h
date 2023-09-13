@@ -6,6 +6,17 @@
 #define VRGINEERS_GLFW_UTILS_H
 
 void printGLFWError();
+
+class ComputeShader{
+public:
+    const char * code;
+    GLuint glID;
+
+    explicit ComputeShader(const char * code);
+};
+
+
+
 void GLAPIENTRY MessageCallback(GLenum source,
                 GLenum type,
                 GLuint id,

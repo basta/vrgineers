@@ -27,24 +27,19 @@ void printGLFWError() {
 }
 
 
-class ComputeShader {
-public:
-    string code;
-    GLuint glID;
+ComputeShader::ComputeShader(const char * src) {
+    glID = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(glID, 1, &src, nullptr);
+    glCompileShader(glID);
 
-    ComputeShader(char * code) {
-        glID = glCreateShader(GL_COMPUTE_SHADER);
-        glShaderSource(glID, 1, &code, nullptr);
-        glCompileShader(glID);
+    int success;
+    glGetShaderiv(glID, GL_COMPILE_STATUS, &success);
 
-        int success;
-        glGetShaderiv(glID, GL_COMPILE_STATUS, &success);
-
-        char infoLog[512];
-        if (!success) {
-            glGetShaderInfoLog(glID, 512, NULL, infoLog);
-            std::cout << "ERROR::SHADER::COMPUTE::COMPILATION_FAILED\n" << infoLog << std::endl;
-
-        };
+    char infoLog[512];
+    if (!success) {
+        glGetShaderInfoLog(glID, 512, NULL, infoLog);
+        std::cout << "ERROR::SHADER::COMPUTE::COMPILATION_FAILED\n" << infoLog << std::endl;
     }
-};
+
+    code = src;
+}
