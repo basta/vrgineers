@@ -29,7 +29,11 @@ const uint RED = 1u;
 const uint GREEN = 2u;
 const uint BLUE = 3u;
 
-uint getChannel(uint x, uint y) {
+const vec3[] CHANNEL_COLORS = {vec3(0.,0.,0.), vec3(1.,0.,0.), vec3(0.,1.,0.), vec3(0.,0.,1.)};
+
+uint getChannel(ivec2 coord) {
+    int x = coord.x;
+    int y = coord.y;
     return
         y%2 * x%2 * BLUE // odd row odd col 1,1
         + y%2 * (1-x%2) * GREEN // odd row, even col 1, 0
@@ -44,8 +48,12 @@ void main() {
     value.x = float(texelCoord.x)/(gl_NumWorkGroups.x);
     value.y = float(texelCoord.y)/(gl_NumWorkGroups.y);
 
+    vec3 finalColor = vec3(0.);
+    finalColor += imageLoad(monoInput, texelCoord).x * CHANNEL_COLORS[getChannel(texelCoord)];
+
+
     imageStore(imgOutput, texelCoord,
-        imageLoad(monoInput, texelCoord).x + vec4(0.,0.,texelCoord.x/4056.,1.)
+        vec4(finalColor, 1.)
     );
 
 }
