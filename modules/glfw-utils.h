@@ -13,7 +13,24 @@ public:
     GLuint glID;
 
     explicit ComputeShader(const char * code);
+    static ComputeShader * from_file(const char * fname);
 };
+
+class ComputeProgram {
+public:
+    GLuint glID;
+    ComputeProgram();
+    void linkAndUse();
+    void attachShader(ComputeShader shader);
+
+    void attachShader(ComputeShader *shader);
+};
+
+GLuint bind_texture_from_array2D1C(const unsigned char *arr, int width, int height, int binding);
+
+GLuint bind_texture_from_array2D3C(const unsigned char *arr, int width, int height, int binding);
+
+void runShaderOnImage(char * glslPath, char * imgPath, char * imgSavePath);
 
 
 

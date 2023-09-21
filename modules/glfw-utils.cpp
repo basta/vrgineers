@@ -5,7 +5,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "glfw-utils.h"
+#include "image-utils.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
+
+#include <chrono>
+using namespace std::chrono;
 
 using namespace std;
 
@@ -17,6 +23,37 @@ void MessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLs
             type, severity, message);
 }
 
+GLuint bind_texture_from_array2D3C(const unsigned char *arr, int width, int height, int binding) {
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, arr);
+    glBindImageTexture(binding, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+    return texture;
+}
+
+
+GLuint bind_texture_from_array2D1C(const unsigned char *arr, int width, int height, int binding) {
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // TODO prozkoumat formáty, nejspíš je tu něco blbě
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, arr);
+
+    glBindImageTexture(binding, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8);
+    return texture;
+}
+
+void expand_to_three_channels(const unsigned char * one_channel, unsigned char * out_three_channel, int one_length) {
+    for (int i = 0; i < one_length; ++i) {
+        out_three_channel[i*3] = one_channel[i];
+    }
+}
 
 void printGLFWError() {
     const char *description;
@@ -26,8 +63,39 @@ void printGLFWError() {
     printf("GLError: 0x%x\n", glGetError());
 }
 
+void runShaderOnImage(char *glslPath, char *imgPath, char *imgSavePath) {
+    auto shader = ComputeShader::from_file(glslPath);
+    ComputeProgram computeProgram = ComputeProgram();
+    computeProgram.attachShader(shader);
+    computeProgram.linkAndUse();
 
-ComputeShader::ComputeShader(const char * src) {
+    int width, height;
+    auto inImg = load_png_from_filename(imgPath, &width, &height);
+
+    auto outTextureData = new unsigned char [width*height*3];
+    GLuint outTexture = bind_texture_from_array2D3C(outTextureData, width, height, 1);
+
+    auto C3in = new unsigned char[width*height*3];
+    expand_to_three_channels(inImg, C3in, width*height);
+    GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 0);
+
+
+    glDispatchCompute(width, height, 1000); // Number of work groups
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    auto outImg = new unsigned char[width * height * 4];
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, outTexture);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
+    save_img(imgSavePath, outImg, width, height, 4);
+    glDeleteShader(shader->glID);
+    glDeleteProgram(computeProgram.glID);
+    printf("INFO Saved shader result to %s\n", imgSavePath);
+
+}
+
+
+ComputeShader::ComputeShader(const char *src) {
     glID = glCreateShader(GL_COMPUTE_SHADER);
     glShaderSource(glID, 1, &src, nullptr);
     glCompileShader(glID);
@@ -42,4 +110,27 @@ ComputeShader::ComputeShader(const char * src) {
     }
 
     code = src;
+}
+
+ComputeShader *ComputeShader::from_file(const char *fname) {
+    std::ifstream t(fname);
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+    if (buffer.str().length() == 0) {
+        printf("ERROR: Shader file %s is empty or non-existent", fname);
+    }
+    return new ComputeShader(buffer.str().c_str());
+}
+
+ComputeProgram::ComputeProgram() {
+    glID = glCreateProgram();
+}
+
+void ComputeProgram::linkAndUse() {
+    glLinkProgram(glID);
+    glUseProgram(glID);
+}
+
+void ComputeProgram::attachShader(ComputeShader *shader) {
+    glAttachShader(glID, shader->glID);
 }

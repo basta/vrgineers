@@ -18,6 +18,6 @@ unsigned char *load_png_from_filename(const std::string filename, int * width, i
     return data;
 }
 
-int save_img(const std::string filename, unsigned char *data, int width, int height, int channels=3) {
-    return stbi_write_png(filename.c_str(), width, height, channels, data, channels*width);
+int save_img(const char * filename, unsigned char *data, int width, int height, int channels=3) {
+    return stbi_write_png(filename, width, height, channels, data, channels*width);
 }
