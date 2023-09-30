@@ -63,7 +63,103 @@ void printGLFWError() {
     printf("GLError: 0x%x\n", glGetError());
 }
 
-void runShaderOnImage(char *glslPath, char *imgPath, char *imgSavePath) {
+void runTwoShadersOnImage(char *glslPath1, char *glslPath2, const char *imgPath, char *imgSavePath) {
+    auto shader1 = ComputeShader::from_file(glslPath1);
+    ComputeProgram computeProgram1 = ComputeProgram();
+    computeProgram1.attachShader(shader1);
+
+    auto shader2 = ComputeShader::from_file(glslPath2);
+    ComputeProgram computeProgram2 = ComputeProgram();
+    computeProgram2.attachShader(shader2);
+
+    int width, height;
+    auto inImg = load_png_from_filename(imgPath, &width, &height);
+
+    auto debayerTextureData = new unsigned char [width*height*3];
+    GLuint debayerTexture = bind_texture_from_array2D3C(debayerTextureData, width, height, 1);
+
+
+    auto denoiseTextureData = new unsigned char [width*height*3];
+    GLuint denoiseTexture = bind_texture_from_array2D3C(debayerTextureData, width, height, 2);
+
+    auto C3in = new unsigned char[width*height*3];
+    expand_to_three_channels(inImg, C3in, width*height);
+    GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 0);
+
+    computeProgram1.linkAndUse();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    computeProgram2.linkAndUse();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+    auto outImg = new unsigned char[width * height * 4];
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, denoiseTexture);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
+    save_img(imgSavePath, outImg, width, height, 4);
+    glDeleteShader(shader1->glID);
+    glDeleteProgram(computeProgram1.glID);
+    glDeleteShader(shader2->glID);
+    glDeleteProgram(computeProgram2.glID);
+    printf("INFO Saved shader result to %s\n", imgSavePath);
+
+}
+
+char * imgPathCache = "";
+unsigned char * imgDataCache = nullptr;
+int widthCache, heightCache;
+
+void runShaderOnImage(char *glslPath, const char *imgPath, char *imgSavePath) {
+    auto shader = ComputeShader::from_file(glslPath);
+    ComputeProgram computeProgram = ComputeProgram();
+    computeProgram.attachShader(shader);
+    computeProgram.linkAndUse();
+    unsigned char * inImg;
+    int width, height;
+    if (imgPath == imgPathCache){
+        width = widthCache;
+        height = heightCache;
+        inImg = imgDataCache;
+    } else {
+        inImg = load_png_from_filename(imgPath, &width, &height);
+        imgDataCache = inImg;
+        widthCache = width;
+        heightCache = height;
+        imgPathCache = (char *)imgPath;
+    }
+
+    auto outTextureData = new unsigned char [width*height*3];
+    GLuint outTexture = bind_texture_from_array2D3C(outTextureData, width, height, 1);
+
+    auto C3in = new unsigned char[width*height*3];
+    expand_to_three_channels(inImg, C3in, width*height);
+    GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 0);
+
+    auto start = high_resolution_clock::now();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    auto end = high_resolution_clock::now();
+
+    auto duration = duration_cast<nanoseconds>(end - start);
+
+    cout << "Time taken by function: "
+         << duration.count() << " microseconds" << endl;
+
+    auto outImg = new unsigned char[width * height * 4];
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, outTexture);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
+    save_img(imgSavePath, outImg, width, height, 4);
+    glDeleteShader(shader->glID);
+    glDeleteProgram(computeProgram.glID);
+    printf("INFO Saved shader result to %s\n", imgSavePath);
+
+}
+
+
+void runShaderOnImageStdinUniform(char *glslPath, const char *imgPath, char *imgSavePath) {
     auto shader = ComputeShader::from_file(glslPath);
     ComputeProgram computeProgram = ComputeProgram();
     computeProgram.attachShader(shader);
@@ -79,19 +175,28 @@ void runShaderOnImage(char *glslPath, char *imgPath, char *imgSavePath) {
     expand_to_three_channels(inImg, C3in, width*height);
     GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 0);
 
-
-    glDispatchCompute(width, height, 1000); // Number of work groups
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
     auto outImg = new unsigned char[width * height * 4];
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture(GL_TEXTURE_2D, outTexture);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
-    save_img(imgSavePath, outImg, width, height, 4);
-    glDeleteShader(shader->glID);
-    glDeleteProgram(computeProgram.glID);
-    printf("INFO Saved shader result to %s\n", imgSavePath);
+    while (true) {
 
+        float uniform;
+
+        cin >> uniform;
+        cout << "Setting " << uniform << endl;
+
+        glUniform1f(3, uniform);
+        glDispatchCompute(width, height, 1); // Number of work groups
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glBindTexture(GL_TEXTURE_2D, outTexture);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
+        save_img(imgSavePath, outImg, width, height, 4);
+        cout << "Updated\n";
+    }
+        glDeleteShader(shader->glID);
+        glDeleteProgram(computeProgram.glID);
+        printf("INFO Saved shader result to %s\n", imgSavePath);
 }
 
 

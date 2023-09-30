@@ -6,34 +6,61 @@
 
 using namespace std;
 
+// pantome 5600k
+
 void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
+}
+
+void runAllShadersOn(const char *fname) {
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/nearest.glsl",
+            fname,
+            "/home/basta/Projects/vrgineers/out/nearest.png"
+    );
+
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/coloring.glsl",
+            fname,
+            "/home/basta/Projects/vrgineers/out/coloring.png"
+    );
+
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/bilinear.glsl",
+            fname,
+            "/home/basta/Projects/vrgineers/out/bilinear.png"
+    );
+
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/green-only.glsl",
+            fname,
+            "/home/basta/Projects/vrgineers/out/green-only.png"
+    );
+
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/green-only-no-extreme.glsl",
+            fname,
+            "/home/basta/Projects/vrgineers/out/green-only-no-extreme.png"
+    );
+
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
+            fname,
+            "/home/basta/Projects/vrgineers/out/bilinear-no-extreme.png"
+    );
+
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme-iterative.glsl",
+            fname,
+            "/home/basta/Projects/vrgineers/out/bilinear-no-extreme-iterative.png"
+    );
+
 }
 
 
 int main(int argc, char **argv) {
 
     std::string filename = argv[1];
-    int width, height;
-    auto data = load_png_from_filename(filename, &width, &height);
-
-    auto denoised = new unsigned char[width * height * 3];
-
-    for (int i = 0; i < width * height; i++) {
-        denoised[i * 3] = 0;
-        denoised[i * 3 + 1] = 0;
-        denoised[i * 3 + 2] = 0;
-
-        if (i % 3 == 0) {
-            denoised[i * 3] = data[i];
-        } else if (i % 3 == 1) {
-            denoised[i * 3 + 1] = data[i];
-        } else if (i % 3 == 2) {
-            denoised[i * 3 + 2] = data[i];
-        }
-    }
-
-    save_img("/tmp/out.png", denoised, width, height, 3);
 
     if (!glfwInit()) {
         std::cout << "Initialization failed \n";
@@ -45,30 +72,33 @@ int main(int argc, char **argv) {
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    GLFWwindow *window = glfwCreateWindow(1, 1, "Compute Shader Example", nullptr, nullptr);
+    GLFWwindow *window = glfwCreateWindow(800, 800, "Compute Shader Example", nullptr, nullptr);
     glfwMakeContextCurrent(window);
-
-
 
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
 
-    glEnable              ( GL_DEBUG_OUTPUT );
-    glDebugMessageCallback( MessageCallback, 0 );
+    glEnable(GL_DEBUG_OUTPUT);
+    glDebugMessageCallback(MessageCallback, 0);
 
     runShaderOnImage(
-            "/home/basta/Projects/vrgineers/glsl/nearest.glsl",
-            argv[1],
-            "/home/basta/Projects/vrgineers/out/nearest.png"
-            );
-
-    runShaderOnImage(
-            "/home/basta/Projects/vrgineers/glsl/coloring.glsl",
-            argv[1],
-            "/home/basta/Projects/vrgineers/out/coloring.png"
+            "/home/basta/Projects/vrgineers/glsl/bilinear.glsl",
+            filename.c_str(),
+            "/home/basta/Projects/vrgineers/out/bilinear.png"
+    );
+    runTwoShadersOnImage(
+            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
+            "/home/basta/Projects/vrgineers/glsl/denoise-contrast.glsl",
+            filename.c_str(),
+            "/home/basta/Projects/vrgineers/out/denoise-contrast.png"
     );
 
+    runTwoShadersOnImage(
+            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
+            "/home/basta/Projects/vrgineers/glsl/denoise.glsl",
+            filename.c_str(),
+            "/home/basta/Projects/vrgineers/out/denoise.png"
+            );
 
     glfwTerminate();
-    save_img("/tmp/out2.png", denoised, width, height,3);
     return 0;
 }

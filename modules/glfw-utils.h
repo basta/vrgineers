@@ -7,20 +7,24 @@
 
 void printGLFWError();
 
-class ComputeShader{
+class ComputeShader {
 public:
-    const char * code;
+    const char *code;
     GLuint glID;
 
-    explicit ComputeShader(const char * code);
-    static ComputeShader * from_file(const char * fname);
+    explicit ComputeShader(const char *code);
+
+    static ComputeShader *from_file(const char *fname);
 };
 
 class ComputeProgram {
 public:
     GLuint glID;
+
     ComputeProgram();
+
     void linkAndUse();
+
     void attachShader(ComputeShader shader);
 
     void attachShader(ComputeShader *shader);
@@ -30,16 +34,19 @@ GLuint bind_texture_from_array2D1C(const unsigned char *arr, int width, int heig
 
 GLuint bind_texture_from_array2D3C(const unsigned char *arr, int width, int height, int binding);
 
-void runShaderOnImage(char * glslPath, char * imgPath, char * imgSavePath);
+void runShaderOnImage(char *glslPath, const char *imgPath, char *imgSavePath);
 
+void runShaderOnImageStdinUniform(char *glslPath, const char *imgPath, char *imgSavePath);
+
+void runTwoShadersOnImage(char *glslPath1, char *glslPath2, const char *imgPath, char *imgSavePath);
 
 
 void GLAPIENTRY MessageCallback(GLenum source,
-                GLenum type,
-                GLuint id,
-                GLenum severity,
-                GLsizei length,
-                const GLchar *message,
-                const void *userParam);
+                                GLenum type,
+                                GLuint id,
+                                GLenum severity,
+                                GLsizei length,
+                                const GLchar *message,
+                                const void *userParam);
 
 #endif //VRGINEERS_GLFW_UTILS_H
