@@ -53,13 +53,13 @@ void main() {
     vec3 areaVariance = variance(texelCoord, filterSize, avg);
     float areaVarianceVal = max(areaVariance.x, max(areaVariance.y, areaVariance.z));
 
-    vec3 tauRatio = clamp(vec3(0.), vec3(1.), noiseVariance/areaVariance);
+    vec3 tauRatioVal = clamp(vec3(0.), vec3(1.), noiseVariance/areaVarianceVal);
 
     vec3 pixel = imageLoad(debayered, texelCoord).xyz;
 
     imageStore(denoised, texelCoord,
     vec4(
-    pixel - tauRatio*(pixel - avg), 1.
+    pixel - tauRatioVal*(pixel - avg), 1.
     )
     );
 

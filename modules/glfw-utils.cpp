@@ -88,16 +88,33 @@ void runTwoShadersOnImage(char *glslPath1, char *glslPath2, const char *imgPath,
 
     computeProgram1.linkAndUse();
     glDispatchCompute(width, height, 1); // Number of work groups
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+    GLuint query;
+    GLint64 result;
+    glGenQueries(1, &query);
+    glBeginQuery(GL_TIME_ELAPSED, query);
 
     computeProgram2.linkAndUse();
     glDispatchCompute(width, height, 1); // Number of work groups
-    glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+
 
     auto outImg = new unsigned char[width * height * 4];
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glBindTexture(GL_TEXTURE_2D, denoiseTexture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
+
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(query, GL_QUERY_RESULT, &result);
+
+    std::cout << "Shader took: " << float(result)/1000000 << "ms\n";
+
+
+
     save_img(imgSavePath, outImg, width, height, 4);
     glDeleteShader(shader1->glID);
     glDeleteProgram(computeProgram1.glID);
