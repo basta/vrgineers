@@ -85,12 +85,23 @@ int main(int argc, char **argv) {
             filename.c_str(),
             "/home/basta/Projects/vrgineers/out/bilinear.png"
     );
-    runTwoShadersOnImage(
-            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
-            "/home/basta/Projects/vrgineers/glsl/iterative-debayer.glsl",
+//    runShaderOnImage(
+//            "/home/basta/Projects/vrgineers/glsl/new-debayer.glsl",
+//            filename.c_str(),
+//            "/home/basta/Projects/vrgineers/out/new-debayer.png"
+//    );
+
+    newDebayerOnImage(
             filename.c_str(),
-            "/home/basta/Projects/vrgineers/out/iterative-debayer.png"
-    );
+            "/home/basta/Projects/vrgineers/out/newDebayer.png"
+            );
+
+    //    runTwoShadersOnImage(
+//            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
+//            "/home/basta/Projects/vrgineers/glsl/iterative-debayer.glsl",
+//            filename.c_str(),
+//            "/home/basta/Projects/vrgineers/out/iterative-debayer.png"
+//    );
 //
 //    runTwoShadersOnImage(
 //            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",

@@ -72,6 +72,25 @@ float greenForBlue(ivec2 coord, float blue){
     )/4;
 }
 
+float redForBlue(ivec2 coord, float green){
+    return green + (
+        DR(coord + ivec2(1, 1))
+        + DR(coord + ivec2(-1, 1))
+        + DR(coord + ivec2(1, -1))
+        + DR(coord + ivec2(-1, -1))
+    )/4;
+}
+
+float blueForRed(ivec2 coord, float green) {
+    return green + (
+    DB(coord + ivec2(1, 1))
+    + DB(coord + ivec2(-1, 1))
+    + DB(coord + ivec2(1, -1))
+    + DB(coord + ivec2(-1, -1))
+    )/4;
+}
+
+
 void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec3 finalColor = vec3(0.);
@@ -82,8 +101,10 @@ void main() {
 
     if (channel == RED) {
         finalColor.g = greenForRed(texelCoord, pixel.r);
+        finalColor.b = blueForRed(texelCoord, pixel.g);
     } else if (channel == BLUE) {
         finalColor.g = greenForBlue(texelCoord, pixel.b);
+        finalColor.r = redForBlue(texelCoord, pixel.g);
     }
     else if (channel == GREEN2) { //top right
         finalColor.r = pixel.g + (

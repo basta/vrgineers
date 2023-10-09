@@ -216,6 +216,69 @@ void runShaderOnImageStdinUniform(char *glslPath, const char *imgPath, char *img
         printf("INFO Saved shader result to %s\n", imgSavePath);
 }
 
+void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
+    auto greenLShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/new-debayer.glsl");
+    auto greenLProgram = ComputeProgram();
+    greenLProgram.attachShader(greenLShader);
+
+
+    auto colorCShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/colorCorrect.glsl");
+    auto colorCProgram = ComputeProgram();
+    colorCProgram.attachShader(colorCShader);
+
+    auto colorLShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/colorLuminance.glsl");
+    auto colorLProgram = ComputeProgram();
+    colorLProgram.attachShader(colorLShader);
+
+    auto lToRGBShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/ltoRGB.glsl");
+    auto lToRGBProgram = ComputeProgram();
+    lToRGBProgram.attachShader(lToRGBShader);
+
+
+    int width, height;
+    auto inImg = load_png_from_filename(imgPath, &width, &height);
+
+    // Textures
+    auto greenLTextureData = new unsigned char [width*height*3];
+    auto allLTextureData = new unsigned char [width*height*3];
+    auto colorCTextureData = new unsigned char [width*height*3];
+    auto lToRGBTextureData = new unsigned char [width*height*3];
+
+    GLuint greenLTexture = bind_texture_from_array2D3C(greenLTextureData, width, height, 1);
+    GLuint allLTexture = bind_texture_from_array2D3C(allLTextureData, width, height, 2);
+    GLuint colorCTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 0);
+    GLuint lToRGBTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 3);
+
+    auto C3in = new unsigned char[width*height*3];
+    expand_to_three_channels(inImg, C3in, width*height);
+    GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 5);
+
+    colorCProgram.linkAndUse();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+    greenLProgram.linkAndUse();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+    colorLProgram.linkAndUse();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    lToRGBProgram.linkAndUse();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+
+    auto outImg = new unsigned char[width * height * 4];
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, lToRGBTexture);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
+    save_img(imgSavePath, outImg, width, height, 4);
+}
+
 
 ComputeShader::ComputeShader(const char *src) {
     glID = glCreateShader(GL_COMPUTE_SHADER);
@@ -255,4 +318,8 @@ void ComputeProgram::linkAndUse() {
 
 void ComputeProgram::attachShader(ComputeShader *shader) {
     glAttachShader(glID, shader->glID);
+}
+
+void ComputeProgram::use() {
+    glUseProgram(glID);
 }

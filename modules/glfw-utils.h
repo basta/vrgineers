@@ -25,6 +25,8 @@ public:
 
     void linkAndUse();
 
+    void use();
+
     void attachShader(ComputeShader shader);
 
     void attachShader(ComputeShader *shader);
@@ -40,6 +42,7 @@ void runShaderOnImageStdinUniform(char *glslPath, const char *imgPath, char *img
 
 void runTwoShadersOnImage(char *glslPath1, char *glslPath2, const char *imgPath, char *imgSavePath);
 
+void newDebayerOnImage(const char *imgPath, char *imgSavePath);
 
 void GLAPIENTRY MessageCallback(GLenum source,
                                 GLenum type,
