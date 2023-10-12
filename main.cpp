@@ -103,12 +103,12 @@ int main(int argc, char **argv) {
 //            "/home/basta/Projects/vrgineers/out/iterative-debayer.png"
 //    );
 //
-//    runTwoShadersOnImage(
-//            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
-//            "/home/basta/Projects/vrgineers/glsl/denoise.glsl",
-//            filename.c_str(),
-//            "/home/basta/Projects/vrgineers/out/denoise.png"
-//            );
+    runTwoShadersOnImage(
+            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
+            "/home/basta/Projects/vrgineers/glsl/denoise.glsl",
+            filename.c_str(),
+            "/home/basta/Projects/vrgineers/out/denoise.png"
+            );
 
 //    runTwoShadersOnImage(
 //            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",

@@ -125,9 +125,9 @@ void main() {
 
 
     imageStore(denoised, texelCoord,
-    vec4(
-    finalColor, 1.
-    )
+        vec4(
+            finalColor, 1.
+        )
     );
 
 

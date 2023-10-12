@@ -158,6 +158,6 @@ void main() {
         )/2 + imageLoad(allLuminance, texelCoord).x;
     }
 
-//    imageStore(colorOut, texelCoord, vec4(vec3(imageLoad(monoInput, texelCoord)), 1.));
-    imageStore(colorOut, texelCoord, vec4(vec3(finalColor), 1.));
+//    imageStore(colorOut, texelCoord, vec4(vec3(imageLoad(greenLuminance, texelCoord)), 1.));
+    imageStore(colorOut, texelCoord, vec4(finalColor, 1.));
 }

@@ -73,9 +73,8 @@ float lFilter(ivec2 coord){
     float sum = 0;
     for (int x = -2; x <= 2; x++){
         for (int y = -2; y <= 2; y++){
-            vec3 pixel = imageLoad(monoInput, coord + ivec2(x, y)).rgb;
-            float value = pixel.r + pixel.g + pixel.b;
-            sum += lMatrix[x][y]*value;
+            float value = imageLoad(monoInput, coord + ivec2(x, y)).r;
+            sum += lMatrix[x+2][y+2]*value;
         }
     }
     return sum/64;

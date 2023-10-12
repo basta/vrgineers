@@ -154,15 +154,14 @@ void runShaderOnImage(char *glslPath, const char *imgPath, char *imgSavePath) {
     expand_to_three_channels(inImg, C3in, width*height);
     GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 0);
 
-    auto start = high_resolution_clock::now();
+    GLuint query;
+    GLint64 result;
+    glGenQueries(1, &query);
+    glBeginQuery(GL_TIME_ELAPSED, query);
+
     glDispatchCompute(width, height, 1); // Number of work groups
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
-    auto end = high_resolution_clock::now();
 
-    auto duration = duration_cast<nanoseconds>(end - start);
-
-    cout << "Time taken by function: "
-         << duration.count() << " microseconds" << endl;
 
     auto outImg = new unsigned char[width * height * 4];
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -171,6 +170,12 @@ void runShaderOnImage(char *glslPath, const char *imgPath, char *imgSavePath) {
     save_img(imgSavePath, outImg, width, height, 4);
     glDeleteShader(shader->glID);
     glDeleteProgram(computeProgram.glID);
+
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(query, GL_QUERY_RESULT, &result);
+
+    std::cout << "Shader " << glslPath << " took: " << float(result)/1000000 << "ms\n";
+
     printf("INFO Saved shader result to %s\n", imgSavePath);
 
 }
@@ -185,11 +190,11 @@ void runShaderOnImageStdinUniform(char *glslPath, const char *imgPath, char *img
     int width, height;
     auto inImg = load_png_from_filename(imgPath, &width, &height);
 
-    auto outTextureData = new unsigned char [width*height*3];
+    auto outTextureData = new unsigned char[width * height * 3];
     GLuint outTexture = bind_texture_from_array2D3C(outTextureData, width, height, 1);
 
-    auto C3in = new unsigned char[width*height*3];
-    expand_to_three_channels(inImg, C3in, width*height);
+    auto C3in = new unsigned char[width * height * 3];
+    expand_to_three_channels(inImg, C3in, width * height);
     GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 0);
 
     auto outImg = new unsigned char[width * height * 4];
@@ -211,9 +216,9 @@ void runShaderOnImageStdinUniform(char *glslPath, const char *imgPath, char *img
         save_img(imgSavePath, outImg, width, height, 4);
         cout << "Updated\n";
     }
-        glDeleteShader(shader->glID);
-        glDeleteProgram(computeProgram.glID);
-        printf("INFO Saved shader result to %s\n", imgSavePath);
+    glDeleteShader(shader->glID);
+    glDeleteProgram(computeProgram.glID);
+    printf("INFO Saved shader result to %s\n", imgSavePath);
 }
 
 void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
@@ -234,6 +239,10 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     auto lToRGBProgram = ComputeProgram();
     lToRGBProgram.attachShader(lToRGBShader);
 
+    auto denoisedShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/denoiseNew.glsl");
+    auto denoisedProgram = ComputeProgram();
+    denoisedProgram.attachShader(denoisedShader);
+
 
     int width, height;
     auto inImg = load_png_from_filename(imgPath, &width, &height);
@@ -248,33 +257,66 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     GLuint allLTexture = bind_texture_from_array2D3C(allLTextureData, width, height, 2);
     GLuint colorCTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 0);
     GLuint lToRGBTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 3);
+    GLuint denoisedTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 4);
 
     auto C3in = new unsigned char[width*height*3];
     expand_to_three_channels(inImg, C3in, width*height);
     GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 5);
 
+    GLuint timeQuery;
+    GLint64 result;
+    glGenQueries(1, &timeQuery);
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+
+
     colorCProgram.linkAndUse();
     glDispatchCompute(width, height, 1); // Number of work groups
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "Color correction took: " << float(result)/1000000 << "ms\n";
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
 
     greenLProgram.linkAndUse();
     glDispatchCompute(width, height, 1); // Number of work groups
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "Green luminance took: " << float(result)/1000000 << "ms\n";
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
 
     colorLProgram.linkAndUse();
     glDispatchCompute(width, height, 1); // Number of work groups
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "Color luminance took: " << float(result)/1000000 << "ms\n";
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+
     lToRGBProgram.linkAndUse();
     glDispatchCompute(width, height, 1); // Number of work groups
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "lToRGB took: " << float(result)/1000000 << "ms\n";
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+
+    denoisedProgram.linkAndUse();
+    glDispatchCompute(width, height, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "Denoise took: " << float(result)/1000000 << "ms\n";
 
     auto outImg = new unsigned char[width * height * 4];
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture(GL_TEXTURE_2D, lToRGBTexture);
+    glBindTexture(GL_TEXTURE_2D, denoisedTexture);
+//    glBindTexture(GL_TEXTURE_2D, allLTexture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
     save_img(imgSavePath, outImg, width, height, 4);
 }
