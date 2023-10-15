@@ -87,7 +87,7 @@ void runTwoShadersOnImage(char *glslPath1, char *glslPath2, const char *imgPath,
     GLuint texture = bind_texture_from_array2D3C(C3in, width, height, 0);
 
     computeProgram1.linkAndUse();
-    glDispatchCompute(width, height, 1); // Number of work groups
+    glDispatchCompute(width/8, height/8, 1); // Number of work groups
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 
@@ -97,7 +97,7 @@ void runTwoShadersOnImage(char *glslPath1, char *glslPath2, const char *imgPath,
     glBeginQuery(GL_TIME_ELAPSED, query);
 
     computeProgram2.linkAndUse();
-    glDispatchCompute(width, height, 1); // Number of work groups
+    glDispatchCompute(width/8, height/8, 1); // Number of work groups
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 
@@ -247,6 +247,10 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     auto lumDenoiseProgram = ComputeProgram();
     lumDenoiseProgram.attachShader(lumDenoiseShader);
 
+    auto chromaDenoiseShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/chromaDenoise.glsl");
+    auto chromaDenoiseProgram = ComputeProgram();
+    chromaDenoiseProgram.attachShader(chromaDenoiseShader);
+
 
     int width, height;
     auto inImg = load_png_from_filename(imgPath, &width, &height);
@@ -262,6 +266,7 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     GLuint colorCTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 0);
     GLuint lToRGBTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 3);
     GLuint denoisedTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 4);
+    GLuint chromaDenoiseTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 5);
     GLuint denoisedLumTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 6);
 
     auto C3in = new unsigned char[width*height*3];
@@ -327,9 +332,20 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
     std::cout << "Denoise took: " << float(result)/1000000 << "ms\n";
 
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+
+    chromaDenoiseProgram.linkAndUse();
+    glDispatchCompute(width/8, height/8, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "Chroma denoise took: " << float(result)/1000000 << "ms\n";
+
+
     auto outImg = new unsigned char[width * height * 4];
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture(GL_TEXTURE_2D, lToRGBTexture);
+    glBindTexture(GL_TEXTURE_2D, greenLTexture);
 //    glBindTexture(GL_TEXTURE_2D, allLTexture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
     save_img(imgSavePath, outImg, width, height, 4);
