@@ -19,7 +19,7 @@ vec3 meanCD(ivec2 coord, int filterSize){
     for (int dx = -filterSize/2; dx <= filterSize/2; dx++){
         for (int dy = -filterSize/2; dy <= filterSize/2; dy++){
             sum += imageLoad(colorIn, coord + ivec2(dx, dy)).xyz
-                   - imageLoad(lumIn, coord + ivec2(dx, dy)).xyz;
+            - imageLoad(lumIn, coord + ivec2(dx, dy)).xyz;
         }
     }
     return sum/pow(filterSize, 2);
@@ -56,6 +56,7 @@ void main() {
     vec3 areaVariance = variance(texelCoord, 7, avgCD);
 
     vec3 tauRatio = clamp(vec3(0.), vec3(1.), noiseVariance/areaVariance);
+
 
     uint channel = getChannelID(texelCoord);
     vec3 avgOut = avgCD + imageLoad(lumIn, texelCoord).xyz;

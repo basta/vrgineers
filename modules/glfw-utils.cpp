@@ -251,6 +251,9 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     auto chromaDenoiseProgram = ComputeProgram();
     chromaDenoiseProgram.attachShader(chromaDenoiseShader);
 
+    auto laplacianShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/laplacian.glsl");
+    auto laplacianProgram = ComputeProgram();
+    laplacianProgram.attachShader(laplacianShader);
 
     int width, height;
     auto inImg = load_png_from_filename(imgPath, &width, &height);
@@ -261,6 +264,7 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     auto colorCTextureData = new unsigned char [width*height*3];
     auto lToRGBTextureData = new unsigned char [width*height*3];
 
+    // Textures
     GLuint greenLTexture = bind_texture_from_array2D3C(greenLTextureData, width, height, 1);
     GLuint allLTexture = bind_texture_from_array2D3C(allLTextureData, width, height, 2);
     GLuint colorCTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 0);
@@ -342,10 +346,19 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
     std::cout << "Chroma denoise took: " << float(result)/1000000 << "ms\n";
 
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+
+    laplacianProgram.linkAndUse();
+    glDispatchCompute(width/8, height/8, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "Laplacian took: " << float(result)/1000000 << "ms\n";
 
     auto outImg = new unsigned char[width * height * 4];
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture(GL_TEXTURE_2D, greenLTexture);
+    glBindTexture(GL_TEXTURE_2D, allLTexture);
 //    glBindTexture(GL_TEXTURE_2D, allLTexture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
     save_img(imgSavePath, outImg, width, height, 4);

@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 
     newDebayerOnImage(
             filename.c_str(),
-            "/home/basta/Projects/vrgineers/out/newDebayer.png"
+            "/home/basta/Projects/vrgineers/report/final_noise.png"
             );
 
     //    runTwoShadersOnImage(
