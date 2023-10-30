@@ -80,11 +80,6 @@ int main(int argc, char **argv) {
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(MessageCallback, 0);
 
-    runShaderOnImage(
-            "/home/basta/Projects/vrgineers/glsl/bilinear.glsl",
-            filename.c_str(),
-            "/home/basta/Projects/vrgineers/out/bilinear.png"
-    );
 //    runShaderOnImage(
 //            "/home/basta/Projects/vrgineers/glsl/new-debayer.glsl",
 //            filename.c_str(),
@@ -93,7 +88,7 @@ int main(int argc, char **argv) {
 
     newDebayerOnImage(
             filename.c_str(),
-            "/home/basta/Projects/vrgineers/report/final_noise.png"
+            "/home/basta/Projects/vrgineers/report/room_no_cc.png"
             );
 
     //    runTwoShadersOnImage(
@@ -103,13 +98,6 @@ int main(int argc, char **argv) {
 //            "/home/basta/Projects/vrgineers/out/iterative-debayer.png"
 //    );
 //
-    runTwoShadersOnImage(
-            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
-            "/home/basta/Projects/vrgineers/glsl/denoise.glsl",
-            filename.c_str(),
-            "/home/basta/Projects/vrgineers/out/denoise.png"
-            );
-
 //    runTwoShadersOnImage(
 //            "/home/basta/Projects/vrgineers/glsl/bilinear-no-extreme.glsl",
 //            "/home/basta/Projects/vrgineers/glsl/denoiseValue.glsl",

@@ -47,14 +47,14 @@ uint getChannelID(ivec2 coord) {
 
 
 void main() {
-    vec3 noiseVariance = vec3(0.0004);
+    vec3 noiseVariance = vec3(0.0004);//TODO REMOVE
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec3 lum = vec3(imageLoad(allLuminance, texelCoord).x);
 
     vec3 finalColor = vec3(0);
     uint channel = getChannelID(texelCoord);
 
-    int filterSize = 5;
+    int filterSize = 7;
     vec3 avg = mean(texelCoord, filterSize);
     vec3 areaVariance = variance(texelCoord, filterSize, avg);
     float areaVarianceVal = max(areaVariance.x, max(areaVariance.y, areaVariance.z));

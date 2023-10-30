@@ -12,8 +12,9 @@ const uint GREEN1 = 2u;
 const uint GREEN2 = 3u;
 const uint BLUE = 4u;
 
-const vec3[] CHANNEL_COLORS = { vec3(0., 0., 0.), vec3(2.08), vec3(1.), vec3(1.), vec3(1.48) };
+//const vec3[] CHANNEL_COLORS = { vec3(0., 0., 0.), vec3(2.08), vec3(1.), vec3(1.), vec3(1.48) };
 //const vec3[] CHANNEL_COLORS = { vec3(0., 0., 0.), vec3(1.), vec3(1.), vec3(1.), vec3(1.) };
+const vec3[] CHANNEL_COLORS = { vec3(0., 0., 0.), vec3(1.84), vec3(1.), vec3(1.), vec3(1.65) };
 
 uint getChannelID(ivec2 coord) {
     int x = coord.x;
