@@ -80,11 +80,11 @@ int main(int argc, char **argv) {
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(MessageCallback, 0);
 
-//    runShaderOnImage(
-//            "/home/basta/Projects/vrgineers/glsl/new-debayer.glsl",
-//            filename.c_str(),
-//            "/home/basta/Projects/vrgineers/out/new-debayer.png"
-//    );
+    runShaderOnImage(
+            "/home/basta/Projects/vrgineers/glsl/bilinear.glsl",
+            filename.c_str(),
+            "/home/basta/Projects/vrgineers/out/bilinear.png"
+    );
 
     newDebayerOnImage(
             filename.c_str(),

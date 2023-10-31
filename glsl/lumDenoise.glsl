@@ -3,6 +3,7 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba8, binding = 2) uniform image2D allLuminance;
 layout(rgba8, binding = 6) uniform image2D denoisedLum;
+layout(rgba8, binding = 7) uniform image2D inTauR;
 
 // Type definitions
 const uint RED = 1u;
@@ -47,19 +48,15 @@ uint getChannelID(ivec2 coord) {
 
 
 void main() {
-    vec3 noiseVariance = vec3(0.0004);//TODO REMOVE
+    vec3 noiseVariance = vec3(0.0004);
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
     vec3 lum = vec3(imageLoad(allLuminance, texelCoord).x);
 
     vec3 finalColor = vec3(0);
     uint channel = getChannelID(texelCoord);
 
-    int filterSize = 7;
-    vec3 avg = mean(texelCoord, filterSize);
-    vec3 areaVariance = variance(texelCoord, filterSize, avg);
-    float areaVarianceVal = max(areaVariance.x, max(areaVariance.y, areaVariance.z));
-
-    vec3 tauRatio = clamp(vec3(0.), vec3(1.), noiseVariance/areaVariance);
+    vec3 tauRatio = imageLoad(inTauR, texelCoord).xyz;
+    vec3 avg = mean(texelCoord, 7);
 
     imageStore(denoisedLum, texelCoord,
     vec4(

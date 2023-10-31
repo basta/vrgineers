@@ -5,6 +5,7 @@ layout(rgba8, binding = 3) uniform image2D colorIn;
 layout(rgba8, binding = 6) uniform image2D lumIn;
 //layout(rgba8, binding = 5) uniform image2D chromaDenoiseOut;
 layout(rgba8, binding = 1) uniform image2D chromaDenoiseOut;
+layout(rgba8, binding = 7) uniform image2D inTauR;
 
 // Type definitions
 const uint RED = 1u;
@@ -50,12 +51,9 @@ uint getChannelID(ivec2 coord) {
 void main() {
     vec4 value = vec4(0.0, 0.0, 0.0, 1.0);
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-    const vec3 noiseVariance = vec3(0.0004);
+
     vec3 avgCD = meanCD(texelCoord, 7);
-
-    vec3 areaVariance = variance(texelCoord, 7, avgCD);
-
-    vec3 tauRatio = clamp(vec3(0.), vec3(1.), noiseVariance/areaVariance);
+    vec3 tauRatio = imageLoad(inTauR, texelCoord).xyz;
 
 
     uint channel = getChannelID(texelCoord);

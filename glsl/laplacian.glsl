@@ -2,6 +2,7 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba8, binding = 1) uniform image2D colorIn;
 layout(rgba8, binding = 2) uniform image2D sharpenedOut;
+layout(rgba8, binding = 7) uniform image2D inTauR;
 
 vec3 laplace4(ivec2 coord){
     return (
@@ -62,13 +63,8 @@ const vec3 noiseVariance = vec3(0.00003); //tohle je blbost, protože už to kou
     ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
     vec3 color = imageLoad(colorIn, coord).rgb;
     vec3 laplace = clamp(vec3(-1.), 0.5*laplaceD(coord), vec3(0.));
-//    vec3 laplace = clamp(vec3(-1.), 1*laplaceD(coord), vec3(0.));
     vec3 sharpened = color + laplace;
-    vec3 avg = mean(coord, 7);
-
-    vec3 areaVariance = variance(coord, 7, avg);
-
-    vec3 tauRatio = clamp(vec3(0.), vec3(1.), noiseVariance/areaVariance);
+    vec3 tauRatio = imageLoad(inTauR, coord).xyz;
 
     imageStore(sharpenedOut, coord, vec4(sharpened - tauRatio*(sharpened - color), 1.0));
 }

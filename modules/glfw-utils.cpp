@@ -255,6 +255,10 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     auto laplacianProgram = ComputeProgram();
     laplacianProgram.attachShader(laplacianShader);
 
+    auto varShader = ComputeShader::from_file("/home/basta/Projects/vrgineers/glsl/variance.glsl");
+    auto varProgram = ComputeProgram();
+    varProgram.attachShader(varShader);
+
     int width, height;
     auto inImg = load_png_from_filename(imgPath, &width, &height);
 
@@ -272,6 +276,8 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     GLuint denoisedTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 4);
     GLuint chromaDenoiseTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 5);
     GLuint denoisedLumTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 6);
+    GLuint varTexture = bind_texture_from_array2D3C(colorCTextureData, width, height, 7);
+
 
     auto C3in = new unsigned char[width*height*3];
     expand_to_three_channels(inImg, C3in, width*height);
@@ -309,6 +315,17 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
     glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
     std::cout << "Color luminance took: " << float(result)/1000000 << "ms\n";
     glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+
+    varProgram.linkAndUse();
+    glDispatchCompute(width/8, height/8, 1); // Number of work groups
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    glEndQuery(GL_TIME_ELAPSED);
+    glGetQueryObjecti64v(timeQuery, GL_QUERY_RESULT, &result);
+    std::cout << "Variance took: " << float(result)/1000000 << "ms\n";
+    glBeginQuery(GL_TIME_ELAPSED, timeQuery);
+
+
 
     lumDenoiseProgram.linkAndUse();
     glDispatchCompute(width/8, height/8, 1); // Number of work groups
@@ -358,8 +375,8 @@ void newDebayerOnImage(const char *imgPath, char *imgSavePath) {
 
     auto outImg = new unsigned char[width * height * 4];
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture(GL_TEXTURE_2D, allLTexture);
-//    glBindTexture(GL_TEXTURE_2D, allLTexture);
+//    glBindTexture(GL_TEXTURE_2D, varTexture);
+    glBindTexture(GL_TEXTURE_2D, greenLTexture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, outImg);
     save_img(imgSavePath, outImg, width, height, 4);
 }
